@@ -15,9 +15,6 @@ from app.models.models import User
 
 app = FastAPI()
 
-
-fake_users_db = {}
-
 test_db = [
     {
     'name': "test1",
@@ -29,20 +26,18 @@ test_db = [
     }
 
 ]
+auth_app = FastAPI()
+
+app.mount("/auth", auth_app)
 
 
-@app.get('/')
-async def products():
-    return test_db
-
-
-@app.post("/register")
+@auth_app.post("/register")
 async def register(user: UserCreate, db: Session = Depends(start_db)):
     db_user = db.query(User).filter(
         (User.username == user.username) | (User.email == user.email)
     ).first()
     if db_user:
-        return None
+        raise HTTPException(status_code=400, detail="Username or email already registered")
     hashed_password = hash_password(user.password)
     n_user = User(username = user.username,
                 hashed_password = hashed_password,
@@ -51,12 +46,17 @@ async def register(user: UserCreate, db: Session = Depends(start_db)):
     db.commit()
     return {"msg": "Registered"}
 
-@app.post("/login")
+@auth_app.post("/login")
 async def login(user: UserLogin, db: Session = Depends(start_db)):
     db_user: User = db.query(User).filter(User.username == user.username).first()
     if not db_user or not verify_password(user.password, db_user.hashed_password):
-        return None
+        raise HTTPException(status_code=401, detail="Invalid credentials")
     return {"logged": db_user}
+
+
+@app.get('/')
+async def products():
+    return test_db
 
 
 @app.post("/add")
@@ -67,6 +67,7 @@ async def add_products():
 @app.delete("/del")
 def delete():
     pass
+
 
 
 
