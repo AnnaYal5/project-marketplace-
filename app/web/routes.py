@@ -6,7 +6,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '.
 
 
 from fastapi import APIRouter, HTTPException, FastAPI, Depends
-from app.models.user_models import UserCreate, UserLogin
+from app.models.user_models import UserCreate, UserLogin, ProductCreate
 from app.utils.password import hash_password, verify_password
 import sqlalchemy
 from app.models.models import start_db
@@ -60,8 +60,14 @@ async def products():
 
 
 @app.post("/add")
-async def add_products():
-    pass
+async def add_products(product: ProductCreate):
+    new_product = {
+        "name": product.name,
+        "price": product.price,
+        "photo_url": product.photo_url
+    }
+    test_db.append(new_product)
+    return {"msg": "Product added successfully", "product": new_product}
 
 
 @app.delete("/del")
